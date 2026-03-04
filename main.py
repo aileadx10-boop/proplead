@@ -3,5 +3,5 @@ from fastapi import FastAPI
 app = FastAPI()
 
 @app.get("/")
-def home():
-    return {"status": "Server running"}
+def root():
+    return {"status": "PropLead API Running"}
