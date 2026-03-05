@@ -1,0 +1,153 @@
+# ============================================================
+# PropLeads Pro — Task Definitions
+# Edit description / expected_output here — no Python needed
+# ============================================================
+
+hunt_leads_task:
+  description: >
+    Search for motivated seller properties in {state} / ZIP {zip_code}.
+
+    SEARCH SEQUENCE (run all 4):
+    1. AttomTool: query ZIP {zip_code}, days_on_market >= 45
+    2. SerperDevTool: "{zip_code} motivated seller price reduced site:zillow.com"
+    3. SerperDevTool: "{zip_code} FSBO for sale by owner {current_year}"
+    4. SerperDevTool: "{zip_code} pre-foreclosure notice of default"
+
+    MOTIVATED SELLER SIGNALS — need at least 2 per lead:
+    - Days on market 45+ (strong) or 90+ (very strong)
+    - Price reduced 3%+ from original
+    - FSBO (no agent = more motivated)
+    - Listing text: "must sell" / "as-is" / "estate sale" / "relocating"
+    - Pre-foreclosure or Notice of Default filed
+    - Vacant property
+
+    RETURN: JSON array of 15-25 properties.
+    Each object must include: address, city, state, zip, list_price,
+    original_price, days_on_market, price_reductions, is_fsbo,
+    pre_foreclosure, listing_language, seller_email, seller_phone,
+    listing_url, source.
+    Return ONLY the JSON array. No extra text.
+  expected_output: >
+    JSON array of 15-25 raw property leads with motivated seller signals.
+  agent: lead_hunter
+
+analyze_properties_task:
+  description: >
+    Enrich every lead from the previous task with equity and distress data.
+
+    FOR EACH PROPERTY, RESEARCH AND ADD:
+
+    1. EQUITY ESTIMATE
+       Search: "[address] Zestimate estimated value"
+       equity_pct = (estimated_value - list_price) / estimated_value * 100
+       estimated_equity_usd = estimated_value - list_price
+
+    2. PRICE REDUCTION %
+       price_reduction_pct = (original_price - list_price) / original_price * 100
+
+    3. COMPARABLE SALES
+       Search: "recently sold {zip_code} {current_year} similar homes"
+       arv_estimate = average sale price of 3 nearest comps
+
+    4. DISTRESS INDICATORS
+       Search public records for: tax delinquency, probate, divorce, liens
+
+    NEW FIELDS to add to each lead object:
+    estimated_value, equity_pct, estimated_equity_usd,
+    price_reduction_pct, arv_estimate, tax_delinquent,
+    probate_indicator, lien_indicator, data_quality.
+
+    Return ONLY the enriched JSON array.
+  expected_output: >
+    JSON array with equity, comps, and distress data added to every lead.
+  agent: property_analyzer
+  context:
+    - hunt_leads_task
+
+score_motivation_task:
+  description: >
+    Score every lead using the PropLeads Composite Model. NO TOOLS.
+
+    ┌─────────────────────┬────────┬────────────────────────────────────┐
+    │ Signal              │ Weight │ Scoring Rules                      │
+    ├─────────────────────┼────────┼────────────────────────────────────┤
+    │ Days on Market      │  30%   │ 45-59d=1.0  60-74d=2.0            │
+    │                     │        │ 75-89d=2.5  90d+=3.0              │
+    ├─────────────────────┼────────┼────────────────────────────────────┤
+    │ Equity %            │  25%   │ <20%=0.5    20-39%=1.5            │
+    │                     │        │ 40-59%=2.0  60%+=2.5              │
+    ├─────────────────────┼────────┼────────────────────────────────────┤
+    │ Price Drop %        │  20%   │ 3-4.9%=1.0  5-7.9%=1.5           │
+    │                     │        │ 8-11.9%=1.8  12%+=2.0            │
+    ├─────────────────────┼────────┼────────────────────────────────────┤
+    │ Pre-Foreclosure/NOD │  15%   │ Yes=1.5     No=0                  │
+    ├─────────────────────┼────────┼────────────────────────────────────┤
+    │ Listing Language    │  10%   │ "must sell"/"motivated" → 1.0     │
+    │                     │        │ "as-is"/"price reduced" → 0.7     │
+    │                     │        │ "estate sale"/"divorce" → 0.6     │
+    │                     │        │ "vacant"/"quick close" → 0.5      │
+    │                     │        │ Generic language → 0.1             │
+    └─────────────────────┴────────┴────────────────────────────────────┘
+
+    score = dom + equity + price_drop + pre_foreclosure + language
+    Round to 1 decimal. Max = 10.0.
+
+    RANK all leads. KEEP TOP 5 ONLY.
+
+    ADD to each lead: motivation_score, score_breakdown (object with
+    each component), score_reasoning (1-2 plain English sentences),
+    rank (1 through 5).
+
+    Return ONLY the JSON array of top 5.
+  expected_output: >
+    JSON array of exactly 5 leads with motivation_score, score_breakdown,
+    score_reasoning, and rank added.
+  agent: motivation_scorer
+  context:
+    - analyze_properties_task
+
+compose_outreach_task:
+  description: >
+    Write 3 personalised outreach emails for each of the 5 scored leads.
+    NO TOOLS — pure writing.
+
+    EMAIL 1 — Empathetic Opener (send Day 1)
+    - Tone: warm, curious, non-pushy
+    - Reference the exact address + how many days it has been listed
+    - Ask one soft opening question
+    - Under 120 words
+    - CTA: "Would you be open to a 10-minute call this week?"
+
+    EMAIL 2 — Value Proposition (send Day 5-7)
+    - Tone: direct and professional
+    - Mention you noticed no response (briefly, not needy)
+    - Present specific value: fast close, no repairs, cash
+    - Reference equity or market context
+    - Under 130 words
+    - CTA: "I can have a written offer to you within 48 hours."
+
+    EMAIL 3 — Final Follow-Up (send Day 12-14)
+    - Tone: respectful closure, light urgency
+    - One sentence social proof
+    - Leave the door open without begging
+    - Under 100 words
+    - CTA: "If your situation changes, my number is always open."
+
+    RULES:
+    - Use the REAL address every single time — never "your property"
+    - Reference actual DOM number and actual price if reduced
+    - Never use "We buy houses" or "Cash buyer" in Email 1
+    - Sound like one human writing to another human
+
+    ADD to each lead:
+    email_1: {subject, body}
+    email_2: {subject, body}
+    email_3: {subject, body}
+
+    Return ONLY the complete JSON array with all emails added.
+  expected_output: >
+    JSON array of 5 leads each containing email_1, email_2, email_3
+    with subject and body fields.
+  agent: outreach_composer
+  context:
+    - score_motivation_task

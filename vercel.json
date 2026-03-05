@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/trigger-crew",
+      "schedule": "0 11 * * *"
+    }
+  ],
+  "functions": {
+    "api/paddle-webhook.ts":  { "maxDuration": 30 },
+    "api/trigger-crew.ts":    { "maxDuration": 10 },
+    "api/zip-check.ts":       { "maxDuration": 5  }
+  }
+}
