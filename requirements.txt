@@ -1,7 +1,4 @@
-crewai
-supabase==2.4.0
-fastapi
-uvicorn
-python-dotenv
-requests
-numpy<2.0
+crewai==0.28.8
+crewai-tools==0.1.6
+pip<24.1
+setuptools<70
