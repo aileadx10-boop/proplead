@@ -19,9 +19,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from crewai.flow.flow import Flow, listen, start
 from pydantic import BaseModel
 
-from propleads_pro.crew import PropLeadsCrew
-from propleads_pro.tools.supabase_tool import SupabaseTool
-from propleads_pro.tools.delivery_tool import DeliveryTool
+from .crew import PropLeadsCrew
+from .tools.supabase_tool import SupabaseTool
+from .tools.delivery_tool import DeliveryTool
 
 BATCH_SIZE       = 10   # ZIPs processed simultaneously
 BATCH_DELAY_SEC  = 10   # wait between batches (OpenAI rate limit buffer)
