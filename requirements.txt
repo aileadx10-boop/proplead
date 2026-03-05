@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+crewai
+langchain-openai
+openai
+supabase
+sendgrid
+requests
+python-dotenv
