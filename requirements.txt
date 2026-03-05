@@ -4,3 +4,4 @@ fastapi
 uvicorn
 python-dotenv
 requests
+numpy<2.0
