@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
-crewai
+crewai[tools]==0.114.0
+crewai-tools==0.38.0
 langchain-openai
 openai
 supabase
