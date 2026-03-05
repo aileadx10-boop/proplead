@@ -1,6 +1,0 @@
-fastapi
-uvicorn[standard]
-crewai
-langchain-openai
-openai
-python-dotenv
