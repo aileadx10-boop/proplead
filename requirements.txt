@@ -1,1 +1,6 @@
-crewai-tools
+crewai
+supabase==2.4.0
+fastapi
+uvicorn
+python-dotenv
+requests
