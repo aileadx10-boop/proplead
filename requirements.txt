@@ -1,9 +1,8 @@
 flask==3.0.3
 python-dotenv==1.0.1
-crewai[tools]
+crewai
 crewai-tools
 supabase
 sendgrid
 jinja2
 requests
-pydantic
