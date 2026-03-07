@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 import sys
 import json
 import threading
@@ -21,6 +23,7 @@ def auth_ok():
 
 @app.route("/health")
 def health():
+    import os
     missing = [k for k in ["OPENAI_API_KEY","SUPABASE_URL","SERPER_API_KEY"]
                if not os.getenv(k)]
     return jsonify({"status": "ok" if not missing else "warning",
